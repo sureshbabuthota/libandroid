@@ -1,0 +1,112 @@
+apply plugin: 'com.android.model.library'
+apply plugin: 'maven'
+
+
+int VERSION_CODE = 1
+String VERSION_NAME = 1.0
+
+if (project.hasProperty("versionCode")) {
+    VERSION_CODE = versionCode as int;
+}
+
+if (project.hasProperty("versionName")) {
+    VERSION_NAME = versionName;
+}
+
+model {
+    android {
+        compileSdkVersion = 23
+        buildToolsVersion = "23.0.1"
+
+        defaultConfig.with {
+            minSdkVersion.apiLevel = 15
+            targetSdkVersion.apiLevel = 23
+            versionCode = VERSION_CODE
+            versionName = VERSION_NAME
+            archivesBaseName = "csclib-$versionName($versionCode)"
+        }
+    }
+
+    compileOptions.with {
+        sourceCompatibility=JavaVersion.VERSION_1_7
+        targetCompatibility=JavaVersion.VERSION_1_7
+    }
+
+    /*
+     * native build settings
+     */
+    android.ndk {
+        moduleName = "cscdirectio"
+        ldLibs.addAll(["android", "log"])
+        /*
+         * Other ndk flags configurable here are
+         * cppFlags.add("-fno-rtti")
+         * cppFlags.add("-fno-exceptions")
+         * ldLibs.addAll(["android", "log"])
+         * stl       = "system"
+         */
+    }
+    android.buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles.add(file('proguard-rules.txt'))
+        }
+    }
+    android.lintOptions {
+        abortOnError false
+    }
+    task javadoc(type: Javadoc) {
+        source = 'src/main/java'
+        ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
+        classpath += files(ext.androidJar)
+        failOnError false
+        options.links("http://docs.oracle.com/javase/7/docs/api/");
+        options.links("http://d.android.com/reference/");
+        //options.linksOffline("http://d.android.com/reference", "${android.plugin.sdkDirectory}/docs/reference");
+        //exclude '**/BuildConfig.java'
+        //exclude '**/R.java'
+    }
+  /* android.productFlavors {
+        // for detailed abiFilter descriptions, refer to "Supported ABIs" @
+        // https://developer.android.com/ndk/guides/abis.html#sa
+       *//* create("arm") {
+            ndk.abiFilters.add("armeabi")
+        }
+        create("arm7") {
+            ndk.abiFilters.add("armeabi-v7a")
+        }
+        create("arm8") {
+            ndk.abiFilters.add("arm64-v8a")
+        }
+        create("x86") {
+            ndk.abiFilters.add("x86")
+        }
+        create("x86-64") {
+            ndk.abiFilters.add("x86_64")
+        }
+        create("mips") {
+            ndk.abiFilters.add("mips")
+        }
+        create("mips-64") {
+            ndk.abiFilters.add("mips64")
+        }*//*
+        // To include all cpu architectures, leaves abiFilters empty
+        create("all")
+    }*/
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "http://nexus.tyfone.blr:8081/nexus/content/repositories/snapshots") {
+                authentication(userName: project.property("nexusUsername"), password: project.property("nexusPassword"))
+            }
+            pom.version="1.0.0-SNAPSHOT"
+            if(project.hasProperty('buildVersion')){
+                pom.version=buildVersion;
+            }
+            pom.artifactId = "csclibrary"
+            pom.groupId = "com.tyfone.android"
+        }
+    }
+}
